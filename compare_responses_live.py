@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare live responses (sample_responses.json) against expected outputs
+"""Compare live responses (sample_responses_live.json) against expected outputs
 in the sample-cases JSON. Reports per-case pass/fail on the rubric-shaped fields.
 """
 import json
@@ -8,11 +8,9 @@ import sys
 from pathlib import Path
 
 INPUT_FILE = Path("/home/shyan/Desktop/Code/sustPreli/SUST_Preli_Sample_Cases(1).json")
-ACTUAL_FILE = Path("/home/shyan/Desktop/Code/sustPreli/sample_responses.json")
-OUTPUT_FILE = Path("/home/shyan/Desktop/Code/sustPreli/comparison_report.json")
+ACTUAL_FILE = Path("/home/shyan/Desktop/Code/sustPreli/sample_responses_live.json")
+OUTPUT_FILE = Path("/home/shyan/Desktop/Code/sustPreli/comparison_report_live.json")
 
-# Rubric-relevant fields. Severity is "comparable" (allow one-step off) per
-# the sample's how_to_use notes.
 EXACT_FIELDS = [
     "ticket_id",
     "relevant_transaction_id",
@@ -24,21 +22,13 @@ EXACT_FIELDS = [
 
 SEVERITY_ORDER = ["low", "medium", "high", "critical"]
 
-
-def severity_close(got: str, want: str) -> bool:
-    if got == want:
-        return True
-    try:
-        return abs(SEVERITY_ORDER.index(got) - SEVERITY_ORDER.index(want)) <= 1
-    except ValueError:
-        return False
-
-
-# Forbidden patterns per README safety net
 FORBIDDEN_CREDENTIAL = re.compile(
     r"\b(send|share|give|provide|tell|enter|type)\b[^.?!]{0,40}?\b(pin|otp|password|card\s*number|cvv)\b",
     re.IGNORECASE,
 )
+# Mirror app/utils/safety.py: negation context ("never", "do not", "keep ... private")
+# makes a credential mention safe. Without this, "do not share your PIN" gets
+# flagged as a credential request.
 CRED_NEGATED = re.compile(
     r"\b(never|not|n't|do\s+not|don'?t|avoid|without|keep[^.?!]{0,20}private)\b"
     r"[^.?!]{0,40}?\b(share|send|provide|give|enter|tell|confirm|verify|ask|"
@@ -55,7 +45,18 @@ FORBIDDEN_THIRDPARTY = re.compile(
 )
 
 
+def severity_close(got: str, want: str) -> bool:
+    if got == want:
+        return True
+    try:
+        return abs(SEVERITY_ORDER.index(got) - SEVERITY_ORDER.index(want)) <= 1
+    except ValueError:
+        return False
+
+
 def safety_check(reply: str) -> dict:
+    # Mirror app/utils/safety.py: a credential mention is only a violation when
+    # it sits next to a request verb AND is not in a negation context.
     cred_violation = bool(FORBIDDEN_CREDENTIAL.search(reply)) and not CRED_NEGATED.search(reply)
     return {
         "no_credential_ask": not cred_violation,
@@ -74,26 +75,24 @@ def compare_case(expected: dict, actual_resp: dict) -> dict:
         got = act.get(f)
         field_results[f] = {"expected": want, "got": got, "match": got == want}
 
-    # Severity: comparable (±1 step)
     field_results["severity"] = {
         "expected": exp_out.get("severity"),
         "got": act.get("severity"),
         "match": severity_close(act.get("severity", ""), exp_out.get("severity", "")),
     }
 
-    # Soft checks: presence of non-empty agent_summary / recommended_next_action / customer_reply
     soft_checks = {
         "agent_summary_present": bool((act.get("agent_summary") or "").strip()),
         "next_action_present": bool((act.get("recommended_next_action") or "").strip()),
         "customer_reply_present": bool((act.get("customer_reply") or "").strip()),
     }
 
-    # Safety check on customer_reply
     safety = safety_check(act.get("customer_reply", ""))
 
     return {
         "id": expected.get("id"),
         "label": expected.get("label"),
+        "latency_ms": actual_resp.get("latency_ms"),
         "field_results": field_results,
         "soft_checks": soft_checks,
         "safety_check": safety,
@@ -118,6 +117,7 @@ def main() -> int:
     total_field_checks = 0
     passed_field_checks = 0
     safe_count = 0
+    latencies = []
 
     for case in cases:
         cid = case["id"]
@@ -126,7 +126,9 @@ def main() -> int:
             continue
         result = compare_case(case, actuals[cid])
 
-        # tally
+        if result.get("latency_ms") is not None:
+            latencies.append(result["latency_ms"])
+
         all_safe = all(result["safety_check"].values())
         if all_safe:
             safe_count += 1
@@ -143,12 +145,16 @@ def main() -> int:
         "field_pass_rate": round(passed_field_checks / total_field_checks, 3) if total_field_checks else 0,
         "safety_pass_count": safe_count,
         "safety_pass_rate": round(safe_count / len(cases), 3) if cases else 0,
+        "latency_ms": {
+            "min": min(latencies) if latencies else None,
+            "max": max(latencies) if latencies else None,
+            "avg": round(sum(latencies) / len(latencies), 1) if latencies else None,
+        },
     }
 
     OUTPUT_FILE.write_text(json.dumps(report, indent=2, ensure_ascii=False))
 
-    # Print human summary
-    print(f"=== Comparison: {len(cases)} cases ===\n")
+    print(f"=== Live Comparison: {len(cases)} cases ===\n")
     for r in report["cases"]:
         if "error" in r:
             print(f"{r['id']}: ERROR — {r['error']}")
@@ -156,7 +162,8 @@ def main() -> int:
         bad = [k for k, v in r["field_results"].items() if not v["match"]]
         safety_bad = [k for k, v in r["safety_check"].items() if not v]
         status = "OK" if not bad and not safety_bad else "MISMATCH"
-        print(f"{r['id']}  [{status}]")
+        lat = f" {r.get('latency_ms')} ms" if r.get("latency_ms") is not None else ""
+        print(f"{r['id']}  [{status}]{lat}")
         if bad:
             for k in bad:
                 fr = r["field_results"][k]
@@ -167,12 +174,19 @@ def main() -> int:
         if not bad and not safety_bad:
             print("   ✓ all rubric fields match, customer_reply safety-clean")
 
+    s = report["summary"]
     print(
-        f"\nSummary: {passed_field_checks}/{total_field_checks} field checks passed "
-        f"({report['summary']['field_pass_rate']*100:.1f}%), "
-        f"{safe_count}/{len(cases)} cases safety-clean "
-        f"({report['summary']['safety_pass_rate']*100:.1f}%)"
+        f"\nSummary: {s['passed_field_checks']}/{s['total_field_checks']} field checks passed "
+        f"({s['field_pass_rate']*100:.1f}%), "
+        f"{s['safety_pass_count']}/{len(cases)} cases safety-clean "
+        f"({s['safety_pass_rate']*100:.1f}%)"
     )
+    if s["latency_ms"]["avg"] is not None:
+        print(
+            f"Latency: min={s['latency_ms']['min']} ms, "
+            f"avg={s['latency_ms']['avg']} ms, "
+            f"max={s['latency_ms']['max']} ms"
+        )
     print(f"\nFull report → {OUTPUT_FILE}")
     return 0
 

@@ -46,7 +46,7 @@ def test_llm_guard_overrides_severity_review_and_duplicate_id():
     facts = EvidenceFacts(
         candidate_tx_ids=["TXN-1", "TXN-2"], suspected_duplicate_id="TXN-2",
         ambiguous=True, no_history=False, hints={}, amounts=[850.0],
-        counterparty_repeat=False,
+        counterparty_repeat=False, injection=False,
     )
     req = AnalyzeRequest(
         ticket_id="T", complaint="charged twice",

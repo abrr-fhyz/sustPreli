@@ -1,0 +1,703 @@
+{
+  "_meta": {
+    "input_file": "SUST_Preli_Sample_Cases(1).json",
+    "actual_file": "sample_responses_live.json",
+    "case_count": 10
+  },
+  "summary": {
+    "total_field_checks": 70,
+    "passed_field_checks": 61,
+    "field_pass_rate": 0.871,
+    "safety_pass_count": 10,
+    "safety_pass_rate": 1.0,
+    "latency_ms": {
+      "min": 263,
+      "max": 393,
+      "avg": 301.7
+    }
+  },
+  "cases": [
+    {
+      "id": "SAMPLE-01",
+      "label": "Wrong transfer with matching evidence",
+      "latency_ms": 393,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-001",
+          "got": "TKT-001",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": "TXN-9101",
+          "got": "TXN-9101",
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "consistent",
+          "got": "consistent",
+          "match": true
+        },
+        "case_type": {
+          "expected": "wrong_transfer",
+          "got": "wrong_transfer",
+          "match": true
+        },
+        "department": {
+          "expected": "dispute_resolution",
+          "got": "dispute_resolution",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": true,
+          "got": true,
+          "match": true
+        },
+        "severity": {
+          "expected": "high",
+          "got": "high",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-001",
+        "relevant_transaction_id": "TXN-9101",
+        "evidence_verdict": "consistent",
+        "case_type": "wrong_transfer",
+        "severity": "high",
+        "department": "dispute_resolution",
+        "agent_summary": "Customer claims transfer TXN-9101 was sent to the wrong recipient.",
+        "recommended_next_action": "Initiate wrong transfer dispute workflow.",
+        "customer_reply": "We have noted your concern regarding transaction TXN-9101. Our dispute team will review the case. Please do not share your PIN or OTP.",
+        "human_review_required": true,
+        "confidence": 0.9,
+        "reason_codes": [
+          "wrong_transfer",
+          "transaction_match"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-02",
+      "label": "Wrong transfer claim with inconsistent evidence",
+      "latency_ms": 301,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-002",
+          "got": "TKT-002",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": "TXN-9202",
+          "got": "TXN-9202",
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "inconsistent",
+          "got": "consistent",
+          "match": false
+        },
+        "case_type": {
+          "expected": "wrong_transfer",
+          "got": "wrong_transfer",
+          "match": true
+        },
+        "department": {
+          "expected": "dispute_resolution",
+          "got": "dispute_resolution",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": true,
+          "got": true,
+          "match": true
+        },
+        "severity": {
+          "expected": "medium",
+          "got": "high",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-002",
+        "relevant_transaction_id": "TXN-9202",
+        "evidence_verdict": "consistent",
+        "case_type": "wrong_transfer",
+        "severity": "high",
+        "department": "dispute_resolution",
+        "agent_summary": "Customer claims transfer TXN-9202 was sent to the wrong recipient.",
+        "recommended_next_action": "Initiate wrong transfer dispute workflow.",
+        "customer_reply": "We have noted your concern regarding transaction TXN-9202. Our dispute team will review the case. Please do not share your PIN or OTP.",
+        "human_review_required": true,
+        "confidence": 0.9,
+        "reason_codes": [
+          "wrong_transfer",
+          "transaction_match"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-03",
+      "label": "Failed payment with balance deducted",
+      "latency_ms": 293,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-003",
+          "got": "TKT-003",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": "TXN-9301",
+          "got": "TXN-9301",
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "consistent",
+          "got": "consistent",
+          "match": true
+        },
+        "case_type": {
+          "expected": "payment_failed",
+          "got": "payment_failed",
+          "match": true
+        },
+        "department": {
+          "expected": "payments_ops",
+          "got": "payments_ops",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": false,
+          "got": false,
+          "match": true
+        },
+        "severity": {
+          "expected": "high",
+          "got": "high",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-003",
+        "relevant_transaction_id": "TXN-9301",
+        "evidence_verdict": "consistent",
+        "case_type": "payment_failed",
+        "severity": "high",
+        "department": "payments_ops",
+        "agent_summary": "Customer reports failed payment TXN-9301 with possible balance deduction.",
+        "recommended_next_action": "Investigate payment ledger and reversal.",
+        "customer_reply": "We have noted the issue with TXN-9301. Our payments team will investigate and any eligible amount will be returned through official channels. Please do not share your PIN or OTP.",
+        "human_review_required": false,
+        "confidence": 0.9,
+        "reason_codes": [
+          "payment_failed"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-04",
+      "label": "Refund request requiring safe handling",
+      "latency_ms": 307,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-004",
+          "got": "TKT-004",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": "TXN-9401",
+          "got": "TXN-9401",
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "consistent",
+          "got": "consistent",
+          "match": true
+        },
+        "case_type": {
+          "expected": "refund_request",
+          "got": "refund_request",
+          "match": true
+        },
+        "department": {
+          "expected": "customer_support",
+          "got": "customer_support",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": false,
+          "got": false,
+          "match": true
+        },
+        "severity": {
+          "expected": "low",
+          "got": "low",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-004",
+        "relevant_transaction_id": "TXN-9401",
+        "evidence_verdict": "consistent",
+        "case_type": "refund_request",
+        "severity": "low",
+        "department": "customer_support",
+        "agent_summary": "Customer requested a refund.",
+        "recommended_next_action": "Inform customer about refund policy.",
+        "customer_reply": "Refund eligibility depends on policy review. Any eligible amount will be returned through official channels. Please do not share your PIN or OTP.",
+        "human_review_required": false,
+        "confidence": 0.8,
+        "reason_codes": [
+          "refund_request"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-05",
+      "label": "Phishing or social engineering report",
+      "latency_ms": 296,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-005",
+          "got": "TKT-005",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": null,
+          "got": null,
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "insufficient_data",
+          "got": "insufficient_data",
+          "match": true
+        },
+        "case_type": {
+          "expected": "phishing_or_social_engineering",
+          "got": "phishing_or_social_engineering",
+          "match": true
+        },
+        "department": {
+          "expected": "fraud_risk",
+          "got": "fraud_risk",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": true,
+          "got": true,
+          "match": true
+        },
+        "severity": {
+          "expected": "critical",
+          "got": "critical",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-005",
+        "relevant_transaction_id": null,
+        "evidence_verdict": "insufficient_data",
+        "case_type": "phishing_or_social_engineering",
+        "severity": "critical",
+        "department": "fraud_risk",
+        "agent_summary": "Customer reports a possible phishing or social engineering attempt.",
+        "recommended_next_action": "Escalate immediately to fraud risk team.",
+        "customer_reply": "We never ask for your PIN, OTP, or password. Please do not share these with anyone. Our fraud team has been notified.",
+        "human_review_required": true,
+        "confidence": 0.95,
+        "reason_codes": [
+          "phishing"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-06",
+      "label": "Vague complaint, insufficient evidence",
+      "latency_ms": 275,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-006",
+          "got": "TKT-006",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": null,
+          "got": null,
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "insufficient_data",
+          "got": "insufficient_data",
+          "match": true
+        },
+        "case_type": {
+          "expected": "other",
+          "got": "other",
+          "match": true
+        },
+        "department": {
+          "expected": "customer_support",
+          "got": "customer_support",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": false,
+          "got": false,
+          "match": true
+        },
+        "severity": {
+          "expected": "low",
+          "got": "low",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-006",
+        "relevant_transaction_id": null,
+        "evidence_verdict": "insufficient_data",
+        "case_type": "other",
+        "severity": "low",
+        "department": "customer_support",
+        "agent_summary": "Unable to determine the exact issue from the complaint.",
+        "recommended_next_action": "Ask the customer for more information.",
+        "customer_reply": "Thank you for contacting us. Please provide additional details about the issue. Please do not share your PIN or OTP with anyone.",
+        "human_review_required": false,
+        "confidence": 0.5,
+        "reason_codes": [
+          "needs_clarification"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-07",
+      "label": "Agent cash-in issue, Bangla complaint",
+      "latency_ms": 293,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-007",
+          "got": "TKT-007",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": "TXN-9701",
+          "got": "TXN-9701",
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "consistent",
+          "got": "consistent",
+          "match": true
+        },
+        "case_type": {
+          "expected": "agent_cash_in_issue",
+          "got": "agent_cash_in_issue",
+          "match": true
+        },
+        "department": {
+          "expected": "agent_operations",
+          "got": "agent_operations",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": true,
+          "got": true,
+          "match": true
+        },
+        "severity": {
+          "expected": "high",
+          "got": "high",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-007",
+        "relevant_transaction_id": "TXN-9701",
+        "evidence_verdict": "consistent",
+        "case_type": "agent_cash_in_issue",
+        "severity": "high",
+        "department": "agent_operations",
+        "agent_summary": "Customer reports cash-in issue.",
+        "recommended_next_action": "Investigate agent transaction.",
+        "customer_reply": "Transaction TXN-9701 will be reviewed by our operations team. Please do not share your PIN or OTP.",
+        "human_review_required": true,
+        "confidence": 0.88,
+        "reason_codes": [
+          "cash_in_issue"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-08",
+      "label": "Multiple plausible transactions, ambiguous match",
+      "latency_ms": 263,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-008",
+          "got": "TKT-008",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": null,
+          "got": null,
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "insufficient_data",
+          "got": "insufficient_data",
+          "match": true
+        },
+        "case_type": {
+          "expected": "wrong_transfer",
+          "got": "other",
+          "match": false
+        },
+        "department": {
+          "expected": "dispute_resolution",
+          "got": "customer_support",
+          "match": false
+        },
+        "human_review_required": {
+          "expected": false,
+          "got": false,
+          "match": true
+        },
+        "severity": {
+          "expected": "medium",
+          "got": "low",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-008",
+        "relevant_transaction_id": null,
+        "evidence_verdict": "insufficient_data",
+        "case_type": "other",
+        "severity": "low",
+        "department": "customer_support",
+        "agent_summary": "Unable to determine the exact issue from the complaint.",
+        "recommended_next_action": "Ask the customer for more information.",
+        "customer_reply": "Thank you for contacting us. Please provide additional details about the issue. Please do not share your PIN or OTP with anyone.",
+        "human_review_required": false,
+        "confidence": 0.5,
+        "reason_codes": [
+          "needs_clarification"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-09",
+      "label": "Merchant settlement delay",
+      "latency_ms": 263,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-009",
+          "got": "TKT-009",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": "TXN-9901",
+          "got": "TXN-9901",
+          "match": true
+        },
+        "evidence_verdict": {
+          "expected": "consistent",
+          "got": "consistent",
+          "match": true
+        },
+        "case_type": {
+          "expected": "merchant_settlement_delay",
+          "got": "merchant_settlement_delay",
+          "match": true
+        },
+        "department": {
+          "expected": "merchant_operations",
+          "got": "merchant_operations",
+          "match": true
+        },
+        "human_review_required": {
+          "expected": false,
+          "got": false,
+          "match": true
+        },
+        "severity": {
+          "expected": "medium",
+          "got": "medium",
+          "match": true
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-009",
+        "relevant_transaction_id": "TXN-9901",
+        "evidence_verdict": "consistent",
+        "case_type": "merchant_settlement_delay",
+        "severity": "medium",
+        "department": "merchant_operations",
+        "agent_summary": "Merchant settlement delay reported.",
+        "recommended_next_action": "Verify settlement batch status.",
+        "customer_reply": "We have noted your concern regarding TXN-9901. Our merchant operations team will review the settlement status.",
+        "human_review_required": false,
+        "confidence": 0.9,
+        "reason_codes": [
+          "merchant_settlement"
+        ]
+      }
+    },
+    {
+      "id": "SAMPLE-10",
+      "label": "Duplicate payment claim",
+      "latency_ms": 333,
+      "field_results": {
+        "ticket_id": {
+          "expected": "TKT-010",
+          "got": "TKT-010",
+          "match": true
+        },
+        "relevant_transaction_id": {
+          "expected": "TXN-10002",
+          "got": null,
+          "match": false
+        },
+        "evidence_verdict": {
+          "expected": "consistent",
+          "got": "insufficient_data",
+          "match": false
+        },
+        "case_type": {
+          "expected": "duplicate_payment",
+          "got": "other",
+          "match": false
+        },
+        "department": {
+          "expected": "payments_ops",
+          "got": "customer_support",
+          "match": false
+        },
+        "human_review_required": {
+          "expected": true,
+          "got": false,
+          "match": false
+        },
+        "severity": {
+          "expected": "high",
+          "got": "low",
+          "match": false
+        }
+      },
+      "soft_checks": {
+        "agent_summary_present": true,
+        "next_action_present": true,
+        "customer_reply_present": true
+      },
+      "safety_check": {
+        "no_credential_ask": true,
+        "no_unauthorized_refund_promise": true,
+        "no_thirdparty_referral": true
+      },
+      "actual": {
+        "ticket_id": "TKT-010",
+        "relevant_transaction_id": null,
+        "evidence_verdict": "insufficient_data",
+        "case_type": "other",
+        "severity": "low",
+        "department": "customer_support",
+        "agent_summary": "Unable to determine the exact issue from the complaint.",
+        "recommended_next_action": "Ask the customer for more information.",
+        "customer_reply": "Thank you for contacting us. Please provide additional details about the issue. Please do not share your PIN or OTP with anyone.",
+        "human_review_required": false,
+        "confidence": 0.5,
+        "reason_codes": [
+          "needs_clarification"
+        ]
+      }
+    }
+  ]
+}

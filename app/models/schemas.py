@@ -5,7 +5,7 @@ schema violations (15% of score). Literal types enforce this at parse time.
 """
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ── enum aliases ──────────────────────────────────────────────────────────────
 Language = Literal["en", "bn", "mixed"]
@@ -45,6 +45,15 @@ class TransactionEntry(BaseModel):
     counterparty: str
     status: TxStatus
 
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _amount_must_be_number(cls, v):
+        # spec §5.2: amount is a number. Reject strings ("100") and bools — pydantic
+        # would otherwise coerce them. int/float pass through.
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            raise ValueError("amount must be a number")
+        return v
+
 
 class AnalyzeRequest(BaseModel):
     ticket_id: str
@@ -55,6 +64,16 @@ class AnalyzeRequest(BaseModel):
     campaign_context: Optional[str] = None
     transaction_history: list[TransactionEntry] = Field(default_factory=list)
     metadata: Optional[dict] = None
+
+    @field_validator("transaction_history")
+    @classmethod
+    def _cap_history(cls, v):
+        # ponytail: bound LLM token cost on adversarial oversized payloads. Brief
+        # says history is "typically 2 to 5"; 100 is generous. Keep the most recent
+        # by timestamp so the relevant transaction survives the cap.
+        if len(v) > 100:
+            return sorted(v, key=lambda t: t.timestamp, reverse=True)[:100]
+        return v
 
 
 # ── response ──────────────────────────────────────────────────────────────────

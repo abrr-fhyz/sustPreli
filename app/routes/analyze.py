@@ -1,15 +1,19 @@
 from fastapi import APIRouter, HTTPException
+
 from app.models.schemas import AnalyzeRequest, AnalyzeResponse
-from app.services.logic import run_analysis
-from app.utils.safety import safety_filter
+from app.services.engine import investigate
+from app.utils.safety import scrub_response
 
 router = APIRouter()
 
-@router.post("/analyze", response_model=AnalyzeResponse)
-def analyze(request: AnalyzeRequest):
-    # Safety check before processing
-    if not safety_filter(request.input):
-        raise HTTPException(status_code=400, detail="Input failed safety check.")
 
-    result = run_analysis(request.input)
-    return AnalyzeResponse(result=result)
+@router.post("/analyze-ticket", response_model=AnalyzeResponse)
+def analyze_ticket(request: AnalyzeRequest) -> AnalyzeResponse:
+    # 422: schema-valid but semantically empty complaint.
+    if not request.complaint.strip():
+        raise HTTPException(status_code=422, detail="complaint must not be empty")
+
+    # Engine errors bubble to the app-level handler -> safe 500 (no crash).
+    result = investigate(request)
+    # Last-line safety net on whatever the engine produced.
+    return scrub_response(result)

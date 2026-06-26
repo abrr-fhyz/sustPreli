@@ -1,0 +1,14 @@
+# secrets — never commit (rubric: secrets env-only)
+.env
+*.env
+!env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# remember plugin runtime state/logs
+.remember/logs/
+.remember/tmp/

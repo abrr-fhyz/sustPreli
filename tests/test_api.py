@@ -1,67 +1,42 @@
-#!/usr/bin/env python3
-"""
-API Test Script — offline (local) and online (Render)
-Usage:
-  python test_api.py          # tests localhost by default
-  python test_api.py online   # tests your Render URL
-"""
-
-import sys
+import json
 import requests
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
-LOCAL_URL  = "http://localhost:8000"
-REMOTE_URL = "https://sustpreli.onrender.com/"  # <- replace this
-# ─────────────────────────────────────────────────────────────────────────────
+BASE_URL = "https://sustpreli.onrender.com/analyze-ticket"
 
-mode     = sys.argv[1] if len(sys.argv) > 1 else "offline"
-BASE_URL = REMOTE_URL if mode == "online" else LOCAL_URL
+# Load test cases
+with open("tests/sample_cases.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
 
-PASS = "\033[92m✓\033[0m"
-FAIL = "\033[91m✗\033[0m"
+cases = data["cases"]
 
+passed = 0
+failed = 0
 
-def test(label, method, path, **kwargs):
-    url = BASE_URL + path
+for case in cases:
+    case_id = case["id"]
+    payload = case["input"]
+    expected = case["expected_output"]
+
+    print(f"\n=== Running {case_id}: {case['label']} ===")
+
     try:
-        resp = requests.request(method, url, timeout=15, **kwargs)
-        ok   = resp.status_code < 400
-        icon = PASS if ok else FAIL
-        print(f"  {icon}  {label}")
-        print(f"       {method} {url}  →  {resp.status_code}")
-        print(f"       {resp.json()}\n")
-    except requests.exceptions.ConnectionError:
-        print(f"  {FAIL}  {label}")
-        print(f"       Could not connect to {url}")
-        print(f"       (is the server running?)\n")
+        response = requests.post(BASE_URL, json=payload, timeout=30)
+
+        if response.status_code != 200:
+            print(response)
+            print(f"❌ HTTP {response.status_code}")
+            continue
+
+        actual = response.json()
+
+        print("Differences:")
+        print("\nExpected:")
+        print(json.dumps(expected, indent=2, ensure_ascii=False))
+        print("\nActual:")
+        print(json.dumps(actual, indent=2, ensure_ascii=False))
+
     except Exception as e:
-        print(f"  {FAIL}  {label}  —  {e}\n")
+        print(f"❌ ERROR: {e}")
 
 
-print(f"\n{'='*50}")
-print(f"  Mode : {'ONLINE  (' + REMOTE_URL + ')' if mode == 'online' else 'OFFLINE (' + LOCAL_URL + ')'}")
-print(f"{'='*50}\n")
-
-# ── TESTS ─────────────────────────────────────────────────────────────────────
-
-test("Health check",
-     "GET", "/health")
-
-test("Analyze — normal input",
-     "POST", "/analyze",
-     json={"input": "hello world"})
-
-test("Analyze — empty input",
-     "POST", "/analyze",
-     json={"input": ""})
-
-test("Analyze — blocked keyword (should return 400)",
-     "POST", "/analyze",
-     json={"input": "my password is 1234"})
-
-test("Analyze — missing field (should return 422)",
-     "POST", "/analyze",
-     json={})
-
-test("404 route",
-     "GET", "/nonexistent")
+print("\n" + "=" * 50)

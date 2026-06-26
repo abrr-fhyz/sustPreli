@@ -49,6 +49,18 @@ _KW: dict[str, list[str]] = {
     ],
 }
 
+# Authority-spoofing / prompt-injection markers. Never legitimate in a real
+# complaint -> always escalate + neutralise the reply (no echo of injected text).
+_INJECTION = [
+    "authorization code", "auth code", "authorisation code",
+    "ignore previous", "ignore all", "ignore the above", "disregard previous",
+    "disregard all", "system prompt", "reveal your prompt", "developer mode",
+    "admin override", "system override", "pre-authorized", "pre authorized",
+    "preauthorized", "agent says", "staff msg", "support agent msg",
+    "this is support", "this is bkash", "this is the admin", "i am from bkash",
+    "i am support", "i am an admin", "as an admin", "override the",
+]
+
 
 def _has(text: str, keywords: list[str]) -> bool:
     for k in keywords:
@@ -97,6 +109,8 @@ class EvidenceFacts:
     # a matched payee the user transacts with repeatedly (>=3x) — a habitual
     # recipient contradicts an "accidental/wrong transfer" claim.
     counterparty_repeat: bool
+    # complaint carries authority-spoofing / prompt-injection markers.
+    injection: bool
 
 
 def ground_evidence(req: AnalyzeRequest) -> EvidenceFacts:
@@ -136,6 +150,7 @@ def ground_evidence(req: AnalyzeRequest) -> EvidenceFacts:
         hints={name: _has(c, kws) for name, kws in _KW.items()},
         amounts=sorted(amts),
         counterparty_repeat=repeat,
+        injection=_has(c, _INJECTION),
     )
 
 

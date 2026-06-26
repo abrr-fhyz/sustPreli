@@ -600,6 +600,4 @@ graph TD
 
 ## License & Credits
 
-Built for the **SUST CSE Carnival 2026 — Codex Community Hackathon (Preliminary)** by a team that believes the right answer to a customer complaint is *evidence*, not vibes.
-
-*"Simple, safe, reliable, schema-correct, evidence-grounded API beats flashy/broken."* — Hackathon calibration takeaway.
+Built for the **SUST CSE Carnival 2026 — Codex Community Hackathon (Preliminary)** by Team *Rocher d'Ephyra*.

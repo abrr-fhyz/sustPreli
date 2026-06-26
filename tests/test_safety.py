@@ -38,6 +38,12 @@ def test_detects_third_party_referral():
     assert "third_party_referral" in reply_violations("Message us on WhatsApp at this link http://bit.ly/x")
 
 
+def test_negated_credential_warning_is_safe():
+    # Warnings must pass — the rule is never to ASK, not to mention.
+    assert reply_violations("Please do not share your PIN or OTP with anyone.") == []
+    assert reply_violations("We never ask for your password or card number.") == []
+
+
 def test_safe_text_has_no_violations():
     assert reply_violations("Any eligible amount will be returned through official channels.") == []
 

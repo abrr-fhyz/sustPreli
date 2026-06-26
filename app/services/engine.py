@@ -1,28 +1,21 @@
-"""Reasoning seam — the investigator.
+"""The investigator — hybrid engine orchestrator.
 
-This is where the heuristic / hybrid logic plugs in later (engine choice TBD).
-For now it returns a SAFE, schema-valid default: when we cannot verify a
-complaint against transaction_history we say so (insufficient_data) and escalate
-to a human rather than guess. Never raises — the route depends on that.
+Flow: deterministic evidence pre-pass grounds the facts -> Gemini judges
+(classification, verdict nuance, multilingual reply) -> on no-key/timeout/error
+we fall back to the rules-only verdict. The outgoing safety net (scrub_response)
+runs in the route, over whatever this returns. Never raises.
 """
 from app.models.schemas import AnalyzeRequest, AnalyzeResponse
-from app.utils.safety import SAFE_ACTION, SAFE_REPLY
+from app.services.evidence import ground_evidence, rules_verdict
+from app.services.llm import triage
 
 
 def investigate(req: AnalyzeRequest) -> AnalyzeResponse:
-    # TODO(heuristics): inspect req.transaction_history vs req.complaint to set
-    # relevant_transaction_id, evidence_verdict, case_type, department, severity.
-    return AnalyzeResponse(
-        ticket_id=req.ticket_id,
-        relevant_transaction_id=None,
-        evidence_verdict="insufficient_data",
-        case_type="other",
-        severity="low",
-        department="customer_support",
-        agent_summary="Complaint received; not yet verifiable against the provided transaction history.",
-        recommended_next_action=SAFE_ACTION,
-        customer_reply=SAFE_REPLY,
-        human_review_required=True,  # safe default: escalate when unsure
-        confidence=0.0,
-        reason_codes=["default_unverified"],
-    )
+    facts = ground_evidence(req)
+
+    llm_out = triage(req, facts)  # None when LLM unavailable
+    if llm_out is not None:
+        return llm_out
+
+    # Fallback (provisional, pending the strategy decision): deterministic rules.
+    return rules_verdict(req, facts)

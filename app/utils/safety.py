@@ -22,13 +22,27 @@ SAFE_ACTION = "Escalate to the responsible team for verification through officia
 # ("never share your PIN") pass while catching "send your OTP".
 # ponytail: verb-before-token proximity; bare "your OTP is needed" slips past —
 # acceptable for a net, the engine is the primary guard.
+_CRED_TOKEN = (
+    r"(pin|otp|one[\s-]?time[\s-]?password|password|cvv|cvc|"
+    r"card\s*(number|no\.?|#)|full\s*card)"
+)
 _CREDENTIAL = re.compile(
     r"\b(share|send|provide|give|enter|tell|confirm|verify|need|type|input|"
-    r"submit|reply\s+with|forward|resend)\b[^.?!]{0,40}?\b"
-    r"(pin|otp|one[\s-]?time[\s-]?password|password|cvv|cvc|"
-    r"card\s*(number|no\.?|#)|full\s*card)\b",
+    r"submit|reply\s+with|forward|resend|ask\s+for)\b[^.?!]{0,40}?\b" + _CRED_TOKEN + r"\b",
     re.IGNORECASE,
 )
+# Negated/warning context ("we never ask for your OTP", "do not share your PIN")
+# is SAFE, not a request. Detected so the net does not clobber correct warnings.
+_CRED_NEGATED = re.compile(
+    r"\b(never|not|n't|do\s+not|don'?t|avoid|without|keep[^.?!]{0,20}private)\b"
+    r"[^.?!]{0,40}?\b(share|send|provide|give|enter|tell|confirm|verify|ask|"
+    r"disclose|reveal|request)\b[^.?!]{0,40}?\b" + _CRED_TOKEN + r"\b",
+    re.IGNORECASE,
+)
+
+
+def _asks_credential(text: str) -> bool:
+    return bool(_CREDENTIAL.search(text)) and not _CRED_NEGATED.search(text)
 # "we will refund / have reversed / will unblock / account unblocked ..."
 _PROMISE = re.compile(
     r"\b(we\s+(will|have|are\s+going\s+to)\s+"
@@ -48,7 +62,7 @@ _THIRD_PARTY = re.compile(
 def reply_violations(text: str) -> list[str]:
     """Return labels for any safety rule the text breaks (empty = safe)."""
     out = []
-    if _CREDENTIAL.search(text):
+    if _asks_credential(text):
         out.append("credential_request")
     if _PROMISE.search(text):
         out.append("unauthorized_promise")
@@ -72,7 +86,7 @@ def scrub_response(resp: AnalyzeResponse) -> AnalyzeResponse:
         changed = True
     # next_action only judged on promises/credentials (it's internal-facing, but
     # the rubric still penalises unauthorized promises here).
-    if _PROMISE.search(action) or _CREDENTIAL.search(action):
+    if _PROMISE.search(action) or _asks_credential(action):
         action = SAFE_ACTION
         changed = True
 

@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.routes import analyze, health
+from app.routes import analyze, diagnostics, health
 
 log = logging.getLogger("queuestorm")
 
@@ -18,6 +18,7 @@ app = FastAPI(title="QueueStorm Investigator", version="1.0.0")
 
 app.include_router(health.router)
 app.include_router(analyze.router)
+app.include_router(diagnostics.router)
 
 
 @app.exception_handler(RequestValidationError)

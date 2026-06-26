@@ -11,7 +11,7 @@ import requests
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 LOCAL_URL  = "http://localhost:8000"
-REMOTE_URL = "https://YOUR-APP.onrender.com"  # <- replace this
+REMOTE_URL = "https://sustpreli.onrender.com/"  # <- replace this
 # ─────────────────────────────────────────────────────────────────────────────
 
 mode     = sys.argv[1] if len(sys.argv) > 1 else "offline"

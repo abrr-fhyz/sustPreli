@@ -5,7 +5,6 @@ from app.models.schemas import (
     AnalyzeResponse
 )
 from app.services.logic import run_analysis
-from app.utils.safety import safety_filter
 
 router = APIRouter()
 
@@ -23,13 +22,10 @@ def analyze_ticket(request: AnalyzeRequest):
             detail="Complaint cannot be empty."
         )
 
-    # Safety check
-    if not safety_filter(request.complaint):
-        raise HTTPException(
-            status_code=400,
-            detail="Input failed safety check."
-        )
-
+    # Safety is enforced on OUTPUT fields (see Section 8), not by rejecting
+    # input. Phishing/injection complaints must be processed, not 400'd:
+    # the phishing path classifies them, and run_analysis never executes
+    # instructions embedded in the complaint.
     try:
         result = run_analysis(request)
 

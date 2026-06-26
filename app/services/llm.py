@@ -70,14 +70,26 @@ ENUMS — use these exact values (case/spelling/plural variants are invalid):
 EVIDENCE REASONING:
 - consistent = transaction_history supports the complaint. inconsistent = it
   contradicts the complaint. insufficient_data = cannot tell from the history.
+- Amounts and times are approximate — users round and misremember. Match the
+  closest transaction (500 matches 495.6); prefer the one nearest in time.
 - Use grounded_facts. candidate_transaction_ids are amount-matched transactions.
   If ambiguous_match is true (several equally-plausible matches), set
   relevant_transaction_id to "" and evidence_verdict to insufficient_data — do NOT guess.
+- counterparty_repeat true = the matched payee is one the user pays repeatedly
+  (>=3 transfers). A "wrong number / mistaken / unknown person" claim against a
+  HABITUAL payee is INCONSISTENT — pick that transaction, verdict inconsistent,
+  human_review_required true (possible false dispute).
 - If suspected_duplicate_id is present, it is the likely duplicate charge.
 - NEVER invent a transaction_id. Only use an id that exists in transaction_history,
   otherwise use "".
 - "balance was deducted" but the matched transaction is failed/pending: treat as
   consistent (a hold can occur; the user is reporting exactly that).
+
+CLASSIFY BY THE COMPLAINT'S INTENT, not by whatever statuses appear in history.
+A failed/pending transaction sitting in the history does NOT make the case
+payment_failed. "I sent money but they didn't receive it" / "wrong number" is
+wrong_transfer even when a failed transfer also exists. Only use payment_failed
+when the user actually reports a payment that did not go through.
 
 CASE PRIORITY when signals overlap:
 phishing_or_social_engineering > duplicate_payment > wrong_transfer > refund_request > other.
@@ -134,6 +146,7 @@ def _build_payload(req: AnalyzeRequest, facts: EvidenceFacts) -> str:
                 "suspected_duplicate_id": facts.suspected_duplicate_id,
                 "ambiguous_match": facts.ambiguous,
                 "no_history": facts.no_history,
+                "counterparty_repeat": facts.counterparty_repeat,
                 "keyword_hints": [k for k, v in facts.hints.items() if v],
             },
         },

@@ -8,7 +8,8 @@ SUST_Preli_Sample_Cases pack). Three tiers:
   B. LLM routing        — functional equivalence vs expected_output, run against
      the real Gemini engine. Skipped unless GEMINI_API_KEY is set.
   C. Rules routing      — same functional check against the deterministic rules
-     fallback. SAMPLE-02 (consistent-vs-inconsistent nuance) is LLM-only -> xfail.
+     fallback. All 10 route correctly after the strategy tweaks (counterparty-
+     frequency, fuzzy amount, ambiguity-guard).
 """
 import json
 import os
@@ -52,18 +53,7 @@ def test_contract_and_safety(case):
     assert reply_violations(body["customer_reply"]) == []  # outgoing reply is safe
 
 
-_RULES_PARAMS = [
-    pytest.param(
-        c,
-        marks=pytest.mark.xfail(reason="consistent/inconsistent nuance needs the LLM", strict=False),
-    )
-    if c["id"] == "SAMPLE-02"
-    else c
-    for c in CASES
-]
-
-
-@pytest.mark.parametrize("case", _RULES_PARAMS, ids=IDS)
+@pytest.mark.parametrize("case", CASES, ids=IDS)
 def test_rules_routing_matches_expected(case):
     """Tier C — deterministic rules fallback routes the samples correctly."""
     req = AnalyzeRequest(**case["input"])
@@ -74,20 +64,8 @@ def test_rules_routing_matches_expected(case):
         assert got[field] == exp[field], f"{case['id']} {field}: {got[field]!r} != {exp[field]!r}"
 
 
-# SAMPLE-02 (consistent-vs-inconsistent) and SAMPLE-08 (failed-tx in history vs
-# wrong_transfer) are the hard reasoning cases targeted by the strategy-tweak
-# phase. Marked xfail until then so the live suite stays green at 8/10.
-_LLM_TWEAK_CASES = {"SAMPLE-02", "SAMPLE-08"}
-_LLM_PARAMS = [
-    pytest.param(c, marks=pytest.mark.xfail(reason="strategy-tweak phase", strict=False))
-    if c["id"] in _LLM_TWEAK_CASES
-    else c
-    for c in CASES
-]
-
-
 @pytest.mark.skipif(not os.getenv("RUN_LLM_TESTS"), reason="set RUN_LLM_TESTS=1 to hit live Gemini")
-@pytest.mark.parametrize("case", _LLM_PARAMS, ids=IDS)
+@pytest.mark.parametrize("case", CASES, ids=IDS)
 def test_llm_routing_matches_expected(case):
     """Tier B — the live Gemini engine reaches functional equivalence."""
     r = client.post("/analyze-ticket", json=case["input"])

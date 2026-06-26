@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<complaint_resolution_config version="1.0">
+
+  <!-- ========================= -->
+  <!-- TRANSACTION MATCHING -->
+  <!-- ========================= -->
+
+  <transaction_matching>
+
+    <time_matching>
+      <strategy>exponential_decay</strategy>
+
+      <description>
+        Do not require exact timestamp equality.
+        Users may misremember transaction time.
+        Assign higher confidence when transaction time
+        is closer to claimed time.
+      </description>
+
+      <scoring>
+        <formula>
+          score = exp(-time_difference / decay_window)
+        </formula>
+
+        <behavior>
+          closer_time → higher_score
+        </behavior>
+      </scoring>
+    </time_matching>
+
+
+    <value_matching>
+
+      <description>
+        Use approximate numeric matching.
+        Allow tolerance for human rounding.
+      </description>
+
+      <examples>
+        <example>
+          <claimed>500</claimed>
+          <actual>495.6</actual>
+          <result>high_match</result>
+        </example>
+      </examples>
+
+      <tolerance>
+        <absolute>configurable</absolute>
+        <percentage>configurable</percentage>
+      </tolerance>
+
+    </value_matching>
+
+
+    <insufficient_fields>
+
+      <rule>
+        If complaint contains no identifiable fields
+        (example: "my money is wrong"),
+        matcher must return null.
+      </rule>
+
+      <output>
+        <matched_transaction>null</matched_transaction>
+        <evidence_verdict>insufficient_data</evidence_verdict>
+      </output>
+
+    </insufficient_fields>
+
+
+    <tie_breaking>
+
+      <rule>
+        If multiple transactions match equally:
+      </rule>
+
+      <selection_order>
+        <criterion>most_recent</criterion>
+        <criterion>same_transaction_type</criterion>
+        <criterion>closest_amount</criterion>
+      </selection_order>
+
+      <safety>
+        <evidence_verdict>
+          insufficient_data
+        </evidence_verdict>
+
+        <reason>
+          avoid guessing
+        </reason>
+      </safety>
+
+    </tie_breaking>
+
+  </transaction_matching>
+
+
+
+  <!-- ========================= -->
+  <!-- CONSISTENCY CHECKS -->
+  <!-- ========================= -->
+
+  <consistency_rules>
+
+    <wrong_transfer_detection>
+
+      <condition>
+        matched_counterparty_frequency_last_30_days >= 3
+      </condition>
+
+      <effect>
+        <verdict>inconsistent</verdict>
+        <mark_user>true</mark_user>
+
+        <reason>
+          repeated transfer history statistically
+          contradicts accidental recipient claim
+        </reason>
+      </effect>
+
+    </wrong_transfer_detection>
+
+
+    <balance_deducted_exception>
+
+      <rule>
+        Complaint:
+        "balance deducted"
+
+        AND
+
+        transaction_status ∈ {failed, pending}
+      </rule>
+
+      <decision>
+        <verdict>consistent</verdict>
+
+        <reason>
+          pending or failed transactions may still
+          temporarily reserve funds
+        </reason>
+      </decision>
+
+    </balance_deducted_exception>
+
+  </consistency_rules>
+
+
+
+  <!-- ========================= -->
+  <!-- INTENT CLASSIFICATION -->
+  <!-- ========================= -->
+
+  <classification>
+
+    <intent name="phishing">
+
+      <triggers>
+        <keyword>call</keyword>
+        <keyword>otp</keyword>
+        <keyword>pin</keyword>
+        <keyword>blocked</keyword>
+        <keyword>scam</keyword>
+      </triggers>
+
+      <special_case>
+        Asking whether OTP should be shared
+        still classifies as phishing.
+      </special_case>
+
+    </intent>
+
+
+    <intent name="wrong_transfer">
+
+      <triggers>
+        <keyword>wrong number</keyword>
+        <keyword>mistakenly</keyword>
+        <keyword>unknown person</keyword>
+      </triggers>
+
+    </intent>
+
+
+    <intent name="merchant_settlement_delay">
+
+      <activation>
+
+        <condition>
+          user_type == merchant
+        </condition>
+
+        <or_keywords>
+          <keyword>settlement</keyword>
+          <keyword>batch</keyword>
+          <keyword>sales</keyword>
+        </or_keywords>
+
+      </activation>
+
+    </intent>
+
+  </classification>
+
+
+
+  <!-- ========================= -->
+  <!-- PRIORITY RESOLUTION -->
+  <!-- ========================= -->
+
+  <priority_hierarchy>
+
+    <priority order="1">phishing</priority>
+    <priority order="2">duplicate_payment</priority>
+    <priority order="3">wrong_transfer</priority>
+    <priority order="4">refund_request</priority>
+    <priority order="5">other</priority>
+
+    <rule>
+      Highest priority wins when multiple
+      intents overlap.
+    </rule>
+
+  </priority_hierarchy>
+
+
+
+  <!-- ========================= -->
+  <!-- LANGUAGE SUPPORT -->
+  <!-- ========================= -->
+
+  <language_support>
+
+    <languages>
+      <language>english</language>
+      <language>bangla</language>
+      <language>bangla_transliteration</language>
+    </languages>
+
+    <normalization>
+
+      <enable>true</enable>
+
+      <steps>
+        <step>lowercase</step>
+        <step>unicode_normalization</step>
+        <step>transliteration_mapping</step>
+        <step>whitespace_cleanup</step>
+      </steps>
+
+    </normalization>
+
+  </language_support>
+
+</complaint_resolution_config>

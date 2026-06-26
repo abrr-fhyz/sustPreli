@@ -73,6 +73,12 @@ def _amounts(text: str) -> set[float]:
     return out
 
 
+def _amt_match(actual: float, claimed: float) -> bool:
+    # fuzzy: humans round (500 vs 495.6). Tolerance = 2% of claimed, floor 1.0.
+    # ponytail: flat tolerance; widen if real data shows bigger rounding gaps.
+    return abs(actual - claimed) <= max(1.0, 0.02 * claimed)
+
+
 def _first(hist: list[TransactionEntry], **match) -> TransactionEntry | None:
     for t in hist:
         if all(getattr(t, k) == v for k, v in match.items()):
@@ -88,6 +94,9 @@ class EvidenceFacts:
     no_history: bool
     hints: dict[str, bool]
     amounts: list[float]
+    # a matched payee the user transacts with repeatedly (>=3x) — a habitual
+    # recipient contradicts an "accidental/wrong transfer" claim.
+    counterparty_repeat: bool
 
 
 def ground_evidence(req: AnalyzeRequest) -> EvidenceFacts:
@@ -95,7 +104,17 @@ def ground_evidence(req: AnalyzeRequest) -> EvidenceFacts:
     amts = _amounts(req.complaint)
     hist = req.transaction_history
 
-    candidates = [t for t in hist if t.amount in amts]
+    candidates = [t for t in hist if any(_amt_match(t.amount, a) for a in amts)]
+
+    # counterparty frequency: does any matched payee appear >=3x in history?
+    repeat = False
+    cp_counts: dict[str, int] = {}
+    for t in hist:
+        cp_counts[t.counterparty] = cp_counts.get(t.counterparty, 0) + 1
+    for t in candidates:
+        if cp_counts.get(t.counterparty, 0) >= 3:
+            repeat = True
+            break
 
     # duplicate: >=2 completed payments of identical amount -> suspect the later.
     # ISO8601 'Z' timestamps sort correctly lexically, so max() picks latest.
@@ -116,6 +135,7 @@ def ground_evidence(req: AnalyzeRequest) -> EvidenceFacts:
         no_history=len(hist) == 0,
         hints={name: _has(c, kws) for name, kws in _KW.items()},
         amounts=sorted(amts),
+        counterparty_repeat=repeat,
     )
 
 
@@ -208,11 +228,15 @@ def rules_verdict(req: AnalyzeRequest, facts: EvidenceFacts) -> AnalyzeResponse:
                 codes=["wrong_transfer", "ambiguous_match", "rules_fallback"],
             )
         if len(facts.candidate_tx_ids) == 1:
+            # habitual payee (>=3 transfers) contradicts an "accident" claim ->
+            # inconsistent + flag the user; otherwise the match stands.
+            repeat = facts.counterparty_repeat
             return _resp(
                 req, case="wrong_transfer", dept="dispute_resolution", sev="high",
-                verdict="consistent", rel=facts.candidate_tx_ids[0], review=True,
-                reply=_SAFE_REPLY,
-                codes=["wrong_transfer", "transaction_match", "rules_fallback"],
+                verdict="inconsistent" if repeat else "consistent",
+                rel=facts.candidate_tx_ids[0], review=True, reply=_SAFE_REPLY,
+                codes=["wrong_transfer", "transaction_match", "rules_fallback"]
+                + (["counterparty_repeat", "flag_user"] if repeat else []),
             )
         return _resp(
             req, case="wrong_transfer", dept="dispute_resolution", sev="medium",

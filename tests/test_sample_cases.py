@@ -32,8 +32,12 @@ IDS = [c["id"] for c in CASES]
 
 client = TestClient(app, raise_server_exceptions=False)
 
-# Functional fields we compare for equivalence (per _meta: same id/verdict/case/dept).
-_FUNCTIONAL = ("case_type", "department", "relevant_transaction_id", "evidence_verdict")
+# Functional fields we compare for equivalence. severity + human_review_required
+# are deterministic (rules / LLM-guard policy), so we assert them too.
+_FUNCTIONAL = (
+    "case_type", "department", "relevant_transaction_id", "evidence_verdict",
+    "severity", "human_review_required",
+)
 
 
 @pytest.mark.parametrize("case", CASES, ids=IDS)

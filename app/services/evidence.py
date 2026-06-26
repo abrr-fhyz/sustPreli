@@ -232,7 +232,10 @@ def rules_verdict(req: AnalyzeRequest, facts: EvidenceFacts) -> AnalyzeResponse:
             # inconsistent + flag the user; otherwise the match stands.
             repeat = facts.counterparty_repeat
             return _resp(
-                req, case="wrong_transfer", dept="dispute_resolution", sev="high",
+                # contradicted claim (habitual payee) is medium; a genuine matched
+                # mis-send is high — mirrors the LLM-guard policy.
+                req, case="wrong_transfer", dept="dispute_resolution",
+                sev="medium" if repeat else "high",
                 verdict="inconsistent" if repeat else "consistent",
                 rel=facts.candidate_tx_ids[0], review=True, reply=_SAFE_REPLY,
                 codes=["wrong_transfer", "transaction_match", "rules_fallback"]

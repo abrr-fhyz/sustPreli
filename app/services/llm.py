@@ -185,25 +185,59 @@ def triage(req: AnalyzeRequest, facts: EvidenceFacts) -> AnalyzeResponse | None:
     except Exception as e:  # noqa: BLE001 - degrade to rules, never crash
         log.warning("LLM triage failed (%s); falling back to rules", type(e).__name__)
         return None
-    return _to_response(req, ta)
+    return _to_response(req, ta, facts)
 
 
-def _to_response(req: AnalyzeRequest, ta: TriageAnalysis) -> AnalyzeResponse:
+# Deterministic severity + escalation policy keyed on case_type. The LLM drifts
+# here (over-escalates routine cases, wobbles severity); these fields are a fixed
+# function of the case, so rules own them. case_type/verdict/routing stay LLM's.
+_POLICY = {
+    "phishing_or_social_engineering": ("critical", True),
+    "duplicate_payment": ("high", True),
+    "payment_failed": ("high", False),
+    "agent_cash_in_issue": ("high", True),
+    "merchant_settlement_delay": ("medium", False),
+    "refund_request": ("low", False),
+    "other": ("low", False),
+}
+
+
+def _policy(case_type: str, verdict: str) -> tuple[str, bool]:
+    # wrong_transfer: escalate only when a transaction actually matched; an
+    # unresolved (insufficient_data) one is a question, not yet a dispute.
+    # ponytail: case-type table, not amount-aware; add a high-value bump if hidden
+    # cases reward escalating large payment_failed/settlement amounts.
+    if case_type == "wrong_transfer":
+        if verdict == "consistent":      # genuine matched mis-send -> dispute
+            return ("high", True)
+        if verdict == "inconsistent":    # claim contradicted (habitual payee) -> still flag
+            return ("medium", True)
+        return ("medium", False)         # insufficient_data -> a question, not a dispute
+    return _POLICY.get(case_type, ("low", False))
+
+
+def _to_response(req: AnalyzeRequest, ta: TriageAnalysis, facts: EvidenceFacts) -> AnalyzeResponse:
     # Guard: drop any hallucinated transaction id.
     tid = ta.relevant_transaction_id or None
     if tid is not None and tid not in {t.transaction_id for t in req.transaction_history}:
         tid = None
+    # Guard: for a duplicate charge, the grounded fact (later identical payment) is
+    # authoritative — the LLM tends to pick the first one.
+    if ta.case_type == "duplicate_payment" and facts.suspected_duplicate_id:
+        tid = facts.suspected_duplicate_id
+    # Guard: severity + escalation are deterministic, not LLM judgement calls.
+    severity, review = _policy(ta.case_type, ta.evidence_verdict)
     return AnalyzeResponse(
         ticket_id=req.ticket_id,
         relevant_transaction_id=tid,
         evidence_verdict=ta.evidence_verdict,
         case_type=ta.case_type,
-        severity=ta.severity,
+        severity=severity,
         department=ta.department,
         agent_summary=ta.agent_summary,
         recommended_next_action=ta.recommended_next_action,
         customer_reply=ta.customer_reply,
-        human_review_required=ta.human_review_required,
+        human_review_required=review,
         confidence=ta.confidence,
         reason_codes=ta.reason_codes,
     )

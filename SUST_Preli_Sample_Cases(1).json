@@ -272,7 +272,7 @@
       "rationale": "Phishing reports are critical severity by default. Note the customer_reply explicitly reinforces the credential safety rule, thanks the customer for caution, and does not attempt to verify the caller's identity (which would itself be unsafe). Empty transaction_history is normal for safety reports."
     },
 
-    {
+    {``
       "id": "SAMPLE-06",
       "label": "Vague complaint, insufficient evidence",
       "input": {

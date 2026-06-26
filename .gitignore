@@ -12,3 +12,11 @@ venv/
 # remember plugin runtime state/logs
 .remember/logs/
 .remember/tmp/
+
+# ignore PDFs (problem statements, rubric, manuals)
+*.pdf
+
+# ignore generated/test JSON artifacts only — keep infra JSON (docker-compose, etc.) tracked
+sample_responses.json
+comparison_report.json
+http_code_test_results.json

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<prompt id="01" phase="Scaffold" title="Project structure, FastAPI skeleton, and health endpoint">
+
+  <objective>
+    Bootstrap the QueueStorm Investigator project with a clean Python/FastAPI structure,
+    environment configuration, dependency files, and a working GET /health endpoint.
+    No AI logic yet — just the skeleton that everything else will plug into.
+  </objective>
+
+  <context>
+    We are building an internal AI copilot API for a digital finance support team.
+    The service must expose exactly two HTTP endpoints:
+      - GET  /health          → { "status": "ok" }
+      - POST /analyze-ticket  → structured JSON (built in later prompts)
+
+    Tech stack: Python 3.11+, FastAPI, Uvicorn, Pydantic v2.
+    The service must start and pass GET /health within 60 seconds.
+  </context>
+
+  <tasks>
+
+    <task id="1.1" name="Directory layout">
+      Create the following structure under the project root:
+      <structure>
+        queuestorm/
+        ├── app/
+        │   ├── __init__.py
+        │   ├── main.py          # FastAPI app factory + router registration
+        │   ├── models/
+        │   │   ├── __init__.py
+        │   │   ├── request.py   # Pydantic request schema (stub — filled in prompt 02)
+        │   │   └── response.py  # Pydantic response schema (stub — filled in prompt 02)
+        │   ├── routers/
+        │   │   ├── __init__.py
+        │   │   ├── health.py    # GET /health
+        │   │   └── analyze.py   # POST /analyze-ticket (stub — filled in prompt 03)
+        │   ├── services/
+        │   │   ├── __init__.py
+        │   │   └── analyzer.py  # Core AI logic (stub — filled in prompt 04)
+        │   └── config.py        # Settings via pydantic-settings / os.environ
+        ├── tests/
+        │   ├── __init__.py
+        │   └── test_health.py
+        ├── .env.example
+        ├── requirements.txt
+        ├── Dockerfile
+        └── README.md
+      </structure>
+    </task>
+
+    <task id="1.2" name="requirements.txt">
+      Pin these dependencies (use latest stable versions):
+        fastapi
+        uvicorn[standard]
+        pydantic>=2.0
+        pydantic-settings
+        httpx          # for async HTTP calls to LLM APIs
+        python-dotenv
+        pytest
+        pytest-asyncio
+        httpx          # also used by TestClient
+    </task>
+
+    <task id="1.3" name="config.py">
+      Create a Settings class using pydantic-settings that reads:
+        ANTHROPIC_API_KEY   (str, required)
+        APP_ENV             (str, default="development")
+        LOG_LEVEL           (str, default="INFO")
+      Expose a single cached `get_settings()` function using `@lru_cache`.
+    </task>
+
+    <task id="1.4" name="main.py">
+      Create the FastAPI app with:
+        - Title: "QueueStorm Investigator"
+        - Version: "1.0.0"
+        - Include routers: health_router (prefix=""), analyze_router (prefix="")
+        - Global exception handler for unhandled errors returning
+          HTTP 500 with body { "error": "internal_server_error" }
+          — must NOT expose stack traces or secrets.
+        - Request validation error handler returning HTTP 400 with
+          body { "error": "bad_request", "detail": "<description>" }.
+    </task>
+
+    <task id="1.5" name="health.py">
+      Implement GET /health:
+        - Returns HTTP 200 with body { "status": "ok" }.
+        - No auth required.
+        - Response time must be under 100 ms (no blocking calls).
+    </task>
+
+    <task id="1.6" name="analyze.py stub">
+      Create a stub POST /analyze-ticket that:
+        - Accepts any JSON body without validation for now.
+        - Returns HTTP 200 with { "status": "not_implemented" }.
+      This will be replaced in prompt 03.
+    </task>
+
+    <task id="1.7" name="Dockerfile">
+      Write a multi-stage Dockerfile:
+        Stage 1 (builder): install dependencies into /install.
+        Stage 2 (runtime): copy /install + app code, run as non-root user.
+        Expose port 8000.
+        CMD: uvicorn app.main:app --host 0.0.0.0 --port 8000
+      Keep image under 5 GB; do NOT bake model weights into the image.
+    </task>
+
+    <task id="1.8" name=".env.example">
+      Create .env.example listing all required env var names with placeholder values.
+      No real secrets. Include a comment for each variable.
+    </task>
+
+    <task id="1.9" name="test_health.py">
+      Write a pytest test using FastAPI TestClient that:
+        - Calls GET /health and asserts HTTP 200.
+        - Asserts response body equals { "status": "ok" }.
+    </task>
+
+    <task id="1.10" name="README.md skeleton">
+      Create README.md with sections (fill content as the project grows):
+        ## QueueStorm Investigator
+        ## Quick Start
+        ## Environment Variables
+        ## Tech Stack
+        ## AI Approach          ← fill in prompt 04
+        ## Safety Logic         ← fill in prompt 05
+        ## Models Used          ← fill in prompt 04
+        ## Assumptions and Known Limitations
+    </task>
+
+  </tasks>
+
+  <verification>
+    After completing all tasks, run:
+      pip install -r requirements.txt
+      pytest tests/test_health.py -v
+    Both must pass with zero errors before moving to prompt 02.
+  </verification>
+
+  <do_not>
+    - Do not add any LLM or AI logic yet.
+    - Do not hard-code API keys anywhere; always read from environment.
+    - Do not expose stack traces in error responses.
+  </do_not>
+
+</prompt>

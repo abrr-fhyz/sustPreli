@@ -1,2 +1,19 @@
-**/__pycache__/
 .env
+*.env
+!env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+.remember/logs/
+.remember/tmp/
+
+*.pdf
+
+sample_responses.json
+comparison_report.json
+http_code_test_results.json
+memory/*

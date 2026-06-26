@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<prompt id="05" phase="Validation &amp; Deployment" title="Sample case testing, README finalization, Docker build, and deployment runbook">
+
+  <objective>
+    Validate the complete service against all 10 public sample cases, finalize all
+    required deliverables (README, sample output file, MODELS section, .env.example),
+    build and test the Docker image, and produce a deployment runbook. The service
+    must be submittable via Live URL, Docker image, or code with runbook.
+  </objective>
+
+  <prerequisite>Prompts 01–04 completed. All pytest tests passing. ANTHROPIC_API_KEY set.</prerequisite>
+
+  <tasks>
+
+    <task id="5.1" name="Sample case test runner (tests/test_sample_cases.py)">
+      Download or copy the companion file SUST_Preli_Sample_Cases.json into tests/.
+
+      Write a parametrized pytest that:
+        - Loads all 10 cases from the JSON file.
+        - For each case, POSTs the input to POST /analyze-ticket.
+        - Asserts HTTP 200.
+        - Asserts the following fields match the expected_output EXACTLY:
+            relevant_transaction_id (null or the exact transaction_id string)
+            evidence_verdict
+            case_type
+            department
+        - Asserts severity is within one level of expected (e.g., high vs critical is OK,
+          high vs low is not).
+        - Asserts customer_reply passes check_customer_reply_safety() with zero violations.
+        - Asserts human_review_required matches expected.
+
+      Note: agent_summary, recommended_next_action, and customer_reply are checked for
+      safety compliance only — not for exact text match (the rubric allows functionally
+      equivalent responses).
+
+      Mark tests that require a live API call with @pytest.mark.integration so they
+      can be skipped in CI with: pytest -m "not integration"
+    </task>
+
+    <task id="5.2" name="Sample output file">
+      Run the service against sample case 01 from SUST_Preli_Sample_Cases.json
+      and save the actual API response to:
+        tests/sample_output_case_01.json
+
+      This file is a required deliverable.
+    </task>
+
+    <task id="5.3" name="Complete README.md">
+      Fill in all README sections:
+
+      ## Quick Start
+        git clone ...
+        cp .env.example .env   # add your ANTHROPIC_API_KEY
+        pip install -r requirements.txt
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+        curl http://localhost:8000/health
+
+      ## Docker
+        docker build -t queuestorm:latest .
+        docker run -p 8000:8000 --env-file .env queuestorm:latest
+
+      ## Environment Variables
+        Table: variable name | required | description
+
+      ## Tech Stack
+        Python 3.11, FastAPI, Uvicorn, Pydantic v2, httpx, Claude API
+
+      ## AI Approach
+        Explain: single-call Claude approach, system prompt design, evidence reasoning
+        strategy (complaint vs transaction history cross-reference), JSON output forcing.
+
+      ## Safety Logic
+        Explain: four safety rules, post-processing validation layer, auto-remediation,
+        prompt injection detection, graceful fallback on AI failure.
+
+      ## MODELS (required section — judge checks this)
+        Table with columns: Model | Provider | Where it runs | Why chosen
+        Row: claude-sonnet-4-6 | Anthropic | External API (api.anthropic.com) |
+             Best balance of reasoning quality, JSON reliability, and latency for 30 s budget.
+
+      ## Assumptions and Known Limitations
+        - transaction_history limited to 2–5 entries; service cannot reason about older history.
+        - Language detection uses the `language` field hint; Banglish handled by Claude natively.
+        - No persistent storage — each request is stateless.
+        - Fallback response used if Claude API is unavailable.
+        - Safety layer catches common violations but is not exhaustive against adversarial inputs.
+    </task>
+
+    <task id="5.4" name="Docker build and smoke test">
+      Build the Docker image:
+        docker build -t queuestorm:latest .
+
+      Run the container locally:
+        docker run -d -p 8000:8000 --env-file .env --name qs_test queuestorm:latest
+
+      Wait 60 seconds, then verify:
+        curl http://localhost:8000/health
+        → { "status": "ok" }
+
+        curl -X POST http://localhost:8000/analyze-ticket \
+          -H "Content-Type: application/json" \
+          -d @tests/sample_output_case_01.json   # reuse the saved input
+        → HTTP 200 with all required fields
+
+      Stop and remove the test container:
+        docker stop qs_test && docker rm qs_test
+
+      If both checks pass, the Docker submission path is ready.
+    </task>
+
+    <task id="5.5" name="RUNBOOK.md">
+      Create RUNBOOK.md at the project root with a copy-paste deployment guide for judges:
+
+      ## Prerequisites
+        - Docker installed, OR Python 3.11+ with pip
+        - ANTHROPIC_API_KEY (set as environment variable or in .env file)
+
+      ## Option A: Docker (recommended)
+        docker pull {your_docker_hub_username}/queuestorm:latest
+        docker run -d -p 8000:8000 -e ANTHROPIC_API_KEY=your_key_here queuestorm:latest
+        curl http://localhost:8000/health
+
+      ## Option B: Python direct
+        pip install -r requirements.txt
+        export ANTHROPIC_API_KEY=your_key_here
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+      ## Verify
+        GET  http://localhost:8000/health           → { "status": "ok" }
+        POST http://localhost:8000/analyze-ticket   → see request schema in README
+
+      ## Run tests
+        pytest tests/ -m "not integration" -v     # unit + schema tests (no API key needed)
+        pytest tests/ -v                           # all tests including integration
+    </task>
+
+    <task id="5.6" name="Final checklist verification">
+      Confirm every required deliverable exists:
+
+      ☐ GitHub repository (public or accessible to organizer)
+      ☐ At least one submission path: Live URL OR Docker image OR Code + RUNBOOK.md
+      ☐ README.md with all required sections including MODELS
+      ☐ requirements.txt (or pyproject.toml)
+      ☐ tests/sample_output_case_01.json
+      ☐ .env.example (no real secrets)
+      ☐ GET /health returns { "status": "ok" } within 60 s of start
+      ☐ POST /analyze-ticket responds within 30 s
+      ☐ No stack traces or API keys in any HTTP response
+      ☐ All enum values in responses match spec exactly
+      ☐ Safety layer active — customer_reply never requests PIN/OTP/password
+      ☐ RUNBOOK.md present for judge re-deployment
+
+      Optional but recommended:
+      ☐ Architecture walkthrough video (≤ 90 seconds) submitted via form
+    </task>
+
+  </tasks>
+
+  <verification>
+    Final end-to-end run:
+      pytest tests/ -m "not integration" -v    # must be 100 % green
+      pytest tests/test_sample_cases.py -v     # run with real API key — aim for 8+/10 match
+    Docker image builds and health check passes.
+    README and RUNBOOK.md are complete and have no placeholder text.
+  </verification>
+
+  <do_not>
+    - Do not commit a real ANTHROPIC_API_KEY to the repository.
+    - Do not leave placeholder text like "TODO" or "fill in later" in README or RUNBOOK.
+    - Do not submit without testing the Docker path at least once.
+    - Do not change enum values to match sample cases — they must match the spec.
+  </do_not>
+
+  <final_note>
+    Priority order if time runs short:
+      1. GET /health working          (required for harness to start)
+      2. POST /analyze-ticket schema  (15 % of score)
+      3. Evidence reasoning correct   (35 % of score — highest weight)
+      4. Safety rules passing         (20 % of score — disqualification risk)
+      5. Deployment reachable         (5 % of score but required for any evaluation)
+      6. Documentation complete       (5 % of score)
+    A simple, reliable, safe API scores higher than a complex but broken one.
+  </final_note>
+
+</prompt>

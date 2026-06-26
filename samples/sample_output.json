@@ -1,0 +1,32 @@
+{
+  "request": {
+    "ticket_id": "T1",
+    "complaint": "amar taka transfer hoy nai kintu kete nise",
+    "transaction_history": [
+      {
+        "transaction_id": "TX1",
+        "timestamp": "2026-01-01T10:00:00Z",
+        "type": "transfer",
+        "amount": 500,
+        "counterparty": "01700000000",
+        "status": "failed"
+      }
+    ]
+  },
+  "response": {
+    "ticket_id": "T1",
+    "relevant_transaction_id": null,
+    "evidence_verdict": "insufficient_data",
+    "case_type": "other",
+    "severity": "low",
+    "department": "customer_support",
+    "agent_summary": "Complaint received; not yet verifiable against the provided transaction history.",
+    "recommended_next_action": "Escalate to the responsible team for verification through official channels.",
+    "customer_reply": "Thank you for reaching out. We have logged your concern and our team is reviewing it. Any eligible amount will be returned through official channels. Please keep your account credentials private and never share them with anyone.",
+    "human_review_required": true,
+    "confidence": 0.0,
+    "reason_codes": [
+      "default_unverified"
+    ]
+  }
+}

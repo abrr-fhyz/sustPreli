@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    image: queuestorm-investigator
+    ports:
+      - "8000:8000"
+    # runtime secrets (GEMINI_API_KEY, ...) — read at start, NOT baked into the
+    # image. .dockerignore excludes .env from the build context. Copy from
+    # .env.example. Judges may instead pass `--env-file judging.env` (manual §8).
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').getcode()==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    # ponytail: no volumes. Service is stateless (no DB, no persisted data); a
+    # source bind-mount would shadow the baked image and risk exposing host files.

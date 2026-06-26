@@ -1,0 +1,29 @@
+# secrets — must never enter the build context or image (manual §8/§10)
+.env
+*.env
+!.env.example
+!env.example
+
+# venvs / caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# repo metadata + docs not needed at runtime (keeps image small)
+.git/
+.gitignore
+*.pdf
+*.md
+tests/
+prompts/
+samples/
+memory/
+.claude/
+.serena/
+.remember/
+smoke.py
+tweak.xml
+Dockerfile
+docker-compose.yml

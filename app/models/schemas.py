@@ -3,6 +3,7 @@
 Enums must match the spec EXACTLY — case/plural/spelling variants are
 schema violations (15% of score). Literal types enforce this at parse time.
 """
+from datetime import datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -52,6 +53,18 @@ class TransactionEntry(BaseModel):
         # would otherwise coerce them. int/float pass through.
         if isinstance(v, bool) or not isinstance(v, (int, float)):
             raise ValueError("amount must be a number")
+        return v
+
+    @field_validator("timestamp")
+    @classmethod
+    def _timestamp_must_be_iso8601(cls, v):
+        # spec §5.2: ISO 8601. Lenient — accept anything datetime can parse (incl.
+        # trailing 'Z'), reject only true garbage ("not-a-date"). Value still kept
+        # as the original string; we only validate the format here.
+        try:
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            raise ValueError("timestamp must be ISO 8601")
         return v
 
 

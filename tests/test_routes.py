@@ -81,6 +81,14 @@ def test_string_amount_is_rejected_400():
     assert r.status_code == 400
 
 
+def test_garbage_timestamp_is_rejected_400():
+    # spec §5.2: ISO 8601 (QA defect D2). Garbage -> 400; valid ISO stays 200.
+    bad = {**VALID, "transaction_history": [{**VALID["transaction_history"][0], "timestamp": "not-a-date"}]}
+    assert client.post("/analyze-ticket", json=bad).status_code == 400
+    ok = {**VALID, "transaction_history": [{**VALID["transaction_history"][0], "timestamp": "2026-04-14T14:08:22Z"}]}
+    assert client.post("/analyze-ticket", json=ok).status_code == 200
+
+
 def test_injection_complaint_escalates_and_does_not_echo():
     # QA defect D3: authority-spoof + injected auth code/amount must escalate and
     # must NOT be echoed back in the customer reply.
